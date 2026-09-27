@@ -1,6 +1,26 @@
-# QNAP TS-230: removing the built-in system-fan PWM cap
+<div align="center">
 
-**Language:** [Русский](README.md) · English
+# QNAP PWM Fix
+
+### Unlock the full replacement-fan PWM range on a QNAP TS-230 while retaining native QTS control
+
+[![Build QPKG](https://github.com/MarshallNaOne/Qnap-pwm-fix/actions/workflows/build-qpkg.yml/badge.svg)](https://github.com/MarshallNaOne/Qnap-pwm-fix/actions/workflows/build-qpkg.yml)
+[![GitHub release](https://img.shields.io/github/v/release/MarshallNaOne/Qnap-pwm-fix?display_name=tag&sort=semver)](https://github.com/MarshallNaOne/Qnap-pwm-fix/releases/latest)
+[![Release downloads](https://img.shields.io/github/downloads/MarshallNaOne/Qnap-pwm-fix/total)](https://github.com/MarshallNaOne/Qnap-pwm-fix/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![QNAP TS-230](https://img.shields.io/badge/QNAP-TS--230-008a9a)](https://www.qnap.com/)
+[![Architecture](https://img.shields.io/badge/architecture-aarch64-informational)](#tested-system)
+[![QPKG](https://img.shields.io/badge/package-QPKG-orange)](docs/en/COMPLETE_GUIDE.md#10-why-persistence-needs-a-qpkg)
+
+**[Download the latest release](https://github.com/MarshallNaOne/Qnap-pwm-fix/releases/latest)**
+· **[Complete guide](docs/en/COMPLETE_GUIDE.md)**
+· **[Manual method](docs/MANUAL_METHOD.md)**
+· **[QPKG build](docs/QPKG.md)**
+· **[Русский](README.md)**
+
+</div>
+
+---
 
 This repository preserves the complete investigation of a system-fan speed
 limit on a QNAP TS-230 and provides a reproducible QPKG named `QNAP-PWM`.

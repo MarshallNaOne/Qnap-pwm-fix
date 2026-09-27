@@ -1,6 +1,26 @@
-# QNAP TS-230: снятие штатного ограничения PWM вентилятора
+<div align="center">
 
-**Язык:** Русский · [English](README.en.md)
+# QNAP PWM Fix
+
+### Полный диапазон PWM для нового вентилятора QNAP TS-230 без отключения штатного управления QTS
+
+[![Build QPKG](https://github.com/MarshallNaOne/Qnap-pwm-fix/actions/workflows/build-qpkg.yml/badge.svg)](https://github.com/MarshallNaOne/Qnap-pwm-fix/actions/workflows/build-qpkg.yml)
+[![GitHub release](https://img.shields.io/github/v/release/MarshallNaOne/Qnap-pwm-fix?display_name=tag&sort=semver)](https://github.com/MarshallNaOne/Qnap-pwm-fix/releases/latest)
+[![Release downloads](https://img.shields.io/github/downloads/MarshallNaOne/Qnap-pwm-fix/total)](https://github.com/MarshallNaOne/Qnap-pwm-fix/releases)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![QNAP TS-230](https://img.shields.io/badge/QNAP-TS--230-008a9a)](https://www.qnap.com/)
+[![Architecture](https://img.shields.io/badge/architecture-aarch64-informational)](#совместимость-и-риски)
+[![QPKG](https://img.shields.io/badge/package-QPKG-orange)](docs/QPKG.md)
+
+**[Скачать последнюю версию](https://github.com/MarshallNaOne/Qnap-pwm-fix/releases/latest)**
+· **[Начать здесь](docs/START_HERE.md)**
+· **[Ручной способ](docs/MANUAL_METHOD.md)**
+· **[Сборка QPKG](docs/QPKG.md)**
+· **[English](README.en.md)**
+
+</div>
+
+---
 
 Репозиторий фиксирует полное расследование ограничения системного вентилятора
 QNAP TS-230 и воспроизводимое решение в виде QPKG `QNAP-PWM`.
