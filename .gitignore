@@ -3,3 +3,7 @@
 *.credentials
 .env
 *.bak
+
+# QDK scratch output is ignored under the source tree. Curated release files
+# are committed separately under release/.
+qpkg/build/

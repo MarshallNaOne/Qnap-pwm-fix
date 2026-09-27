@@ -1,0 +1,3 @@
+# QDK package-specific hooks are intentionally empty.
+# Installation, registration and removal are handled by the standard QDK
+# generated qinstall.sh. Runtime behavior lives in shared/QNAP-PWM.sh.

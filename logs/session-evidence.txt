@@ -1,0 +1,203 @@
+QNAP TS-230 PWM investigation — selected raw evidence
+Date observed: 2026-09-27
+Host prompt: adminit@msk-nas03
+Secrets and unrelated identifiers have been omitted.
+
+===== MODEL PROFILE BEFORE =====
+$ grep -n -A5 '^\[System FAN\]' /etc/model.conf
+43:[System FAN]
+44-FAN_UNIT = MCU
+45-FAN_1 = I1:C0
+46-MIN_PWM = 51
+47-MAX_PWM = 178
+48-HEAT_SOURCE = SYS, DISK
+
+===== MANUAL CHANGE =====
+$ ls -l /etc/model_Q04Z0_Q0500_10_10.conf*
+-rw-r--r-- 1 admin administrators 1805 2026-09-27 21:13 /etc/model_Q04Z0_Q0500_10_10.conf
+-rw-r--r-- 1 admin administrators 1805 2026-09-27 21:13 /etc/model_Q04Z0_Q0500_10_10.conf.bak
+
+$ sudo sed -i 's/^MAX_PWM = 178$/MAX_PWM = 255/' /etc/model_Q04Z0_Q0500_10_10.conf
+
+$ grep -n -A5 '^\[System FAN\]' /etc/model.conf
+43:[System FAN]
+44-FAN_UNIT = MCU
+45-FAN_1 = I1:C0
+46-MIN_PWM = 51
+47-MAX_PWM = 255
+48-HEAT_SOURCE = SYS, DISK
+
+Observed in QTS after applying 50% then 100%: 2970 RPM.
+
+===== FIRST MANUAL QPKG REGISTRATION AFTER REBOOT =====
+$ sudo /sbin/qpkg_cli --status QNAP-PWM --output 2
+{ "name": "QNAP-PWM", "status_code": 700, "status_value": "disabled", "op_code": 1, "st_code": 0, "enabled": "false" }
+
+$ sudo grep -n -A15 '^\[QNAP-PWM\]' /mnt/HDA_ROOT/.config/qpkg.conf
+329:[QNAP-PWM]
+330-Name = QNAP-PWM
+331-Display_Name = QNAP PWM Unlock
+332-Version = 1.0.0
+333-Author = adminit
+334-Shell = /share/CACHEDEV1_DATA/.qpkg/QNAP-PWM/QNAP-PWM.sh
+335-Install_Path = /share/CACHEDEV1_DATA/.qpkg/QNAP-PWM
+336-RC_Number = 150
+337-Enable = FALSE
+338-Status = complete
+339-Incomplete_Conf = 1
+
+$ sudo grep -iE 'QNAP-PWM|disable|invalid|signature|unofficial' /var/log/log.qpkg | tail -100
+09/27 20:41:11( 9974) clear_operating_status 267: remove QNAP-PWM operating status: 3:0:1845:0
+09/27 20:45:33( 9974) qpkgd_command_handler 4687: qpkg (QNAP-PWM) reqcode 7(get status), opcode -1, stcode -1 type 0
+09/27 20:45:33( 9974) qpkgd_get_status 5965: Can not found qpkg QNAP-PWM
+
+===== MANUAL SERVICE START PROVED PAYLOAD =====
+$ sudo /sbin/qpkg_service start QNAP-PWM
+
+$ grep -n -A5 '^\[System FAN\]' /etc/model.conf
+43:[System FAN]
+44-FAN_UNIT = MCU
+45-FAN_1 = I1:C0
+46-MIN_PWM = 51
+47-MAX_PWM = 255
+48-HEAT_SOURCE = SYS, DISK
+
+$ tail -10 /mnt/HDA_ROOT/.config/qnap-pwm.log
+2026-09-27 20:50:37 [QNAP-PWM] Starting PWM patch
+2026-09-27 20:50:37 [QNAP-PWM] Model config: /etc/model_Q04Z0_Q0500_10_10.conf
+2026-09-27 20:50:37 [QNAP-PWM] Current MAX_PWM=178
+2026-09-27 20:50:37 [QNAP-PWM] MAX_PWM changed: 178 -> 255
+2026-09-27 20:50:37 [QNAP-PWM] Triggering HAL fan configuration reload
+2026-09-27 20:50:40 [QNAP-PWM] PWM patch successfully applied
+
+===== QDK ENVIRONMENT =====
+$ getcfg QDK Install_Path -f /etc/config/qpkg.conf
+/share/CACHEDEV1_DATA/.qpkg/QDK
+
+$ ls -l /usr/bin/qbuild
+lrwxrwxrwx 1 admin administrators 42 2026-09-27 20:54 /usr/bin/qbuild -> /share/CACHEDEV1_DATA/.qpkg/QDK/bin/qbuild
+
+$ qbuild --version
+qbuild 2.3.11
+
+$ uname -m
+aarch64
+
+$ getcfg System "Model" -f /etc/config/uLinux.conf
+TS-XA28A
+
+===== QDK GENERIC BUILD =====
+$ qbuild --strict --verbose
+Creating archive with data files...
+Adding shared files...
+Adding icons...
+Adding configuration files...
+Adding built version...
+Adapt the data package files (such as file owner)
+Creating compressed tar archive...
+Creating archive with control files...
+Adding built information...
+Creating QPKG package...
+QPKG package name set to QNAP-PWM_1.0.0.qpkg
+Packaging optional extra data files...
+Adding header script...
+Adding content...
+control data...
+data archive...
+Adding tail data...
+Adding QPKG checksum: 1090392554
+
+$ find build -maxdepth 2 -type f -print
+build/QNAP-PWM_1.0.0.qpkg
+build/QNAP-PWM_1.0.0.qpkg.md5
+
+$ ls -lh build/
+total 32K
+-rw-r--r-- 1 adminit everyone 25K 2026-09-27 20:57 QNAP-PWM_1.0.0.qpkg
+-rw-r--r-- 1 adminit everyone  60 2026-09-27 20:57 QNAP-PWM_1.0.0.qpkg.md5
+
+$ qbuild --extract build/QNAP-PWM_1.0.0.qpkg /tmp/qnap-pwm-extract
+./
+./built_info
+./qinstall.sh
+./package_routines
+./qpkg.cfg
+
+$ tar -tzvf /tmp/qnap-pwm-extract/data.tar.gz
+drwxr-xr-x adminit/everyone  0 2026-09-27 20:55 ./
+-rwxr-xr-x adminit/everyone 2626 2026-09-27 20:56 ./QNAP-PWM.sh
+
+===== CLI INSTALL REJECTED BEFORE QUEUE =====
+$ sudo /sbin/qpkg_cli -m /share/CACHEDEV1_DATA/qpkg-build/QNAP-PWM/build/QNAP-PWM_1.0.0.qpkg
+internal name:QNAP-PWM, path:/share/CACHEDEV1_DATA/qpkg-build/QNAP-PWM/build/QNAP-PWM_1.0.0.qpkg
+
+/var/log/log.qpkg:
+09/27 21:03:01 add_mission: [CLI] install (QNAP-PWM_1.0.0.qpkg) /share/CACHEDEV1_DATA/qpkg-build/QNAP-PWM/build/QNAP-PWM_1.0.0.qpkg
+09/27 21:03:02 qpkgd_code_signing_check: /sbin/cs_qpkg_verify_v2.sh -t -f /share/CACHEDEV1_DATA/qpkg-build/QNAP-PWM/build/QNAP-PWM_1.0.0.qpkg -2:-2
+
+The package did not enter the qpkgd install queue. -A/--ignore_cert required
+an argument, and tested values did not bypass this local pre-check.
+
+===== SUCCESSFUL APP CENTER INSTALL =====
+$ sudo /sbin/qpkg_cli --status QNAP-PWM --output 2
+{ "name": "QNAP-PWM", "status_code": 600, "status_value": "enabled", "op_code": 1, "st_code": 0, "enabled": "true" }
+
+$ sudo grep -n -A30 '^\[QNAP-PWM\]' /mnt/HDA_ROOT/.config/qpkg.conf
+345:[QNAP-PWM]
+346-Status = complete
+347-Name = QNAP-PWM
+348-Build = 20260927
+349-Display_Name = QNAP PWM Unlock
+350-Version = 1.0.0
+351-Author = adminit
+352-QPKG_File = QNAP-PWM.qpkg
+353-Date = 2026-09-27
+354-Shell = /share/CACHEDEV1_DATA/.qpkg/QNAP-PWM/QNAP-PWM.sh
+355-Volume_Select = 1
+356-Install_Path = /share/CACHEDEV1_DATA/.qpkg/QNAP-PWM
+357-RC_Number = 150
+358-FW_Ver_Min = 5.2.0
+359-FW_Ver_Max = 5.9.9
+360-Enable = TRUE
+361-Opt_Xml = 0
+
+$ ls -la /share/CACHEDEV1_DATA/.qpkg/QNAP-PWM
+total 20
+drwxr-xr-x 2 adminit everyone       4096 2026-09-27 21:11 ./
+drwxrwxrwx 8 admin   administrators 4096 2026-09-27 21:11 ../
+-rw-rw-rw- 1 admin   administrators   17 2026-09-27 21:11 .list
+-rwxr-xr-x 1 adminit everyone       2626 2026-09-27 20:56 QNAP-PWM.sh
+-rwxr-xr-x 1 admin   administrators  796 2026-09-27 21:11 .uninstall.sh
+
+$ sudo cat /mnt/HDA_ROOT/.config/qnap-pwm.log
+2026-09-27 20:50:37 [QNAP-PWM] Starting PWM patch
+2026-09-27 20:50:37 [QNAP-PWM] Model config: /etc/model_Q04Z0_Q0500_10_10.conf
+2026-09-27 20:50:37 [QNAP-PWM] Current MAX_PWM=178
+2026-09-27 20:50:37 [QNAP-PWM] MAX_PWM changed: 178 -> 255
+2026-09-27 20:50:37 [QNAP-PWM] Triggering HAL fan configuration reload
+2026-09-27 20:50:40 [QNAP-PWM] PWM patch successfully applied
+2026-09-27 20:51:59 [QNAP-PWM] Starting PWM patch
+2026-09-27 20:51:59 [QNAP-PWM] Model config: /etc/model_Q04Z0_Q0500_10_10.conf
+2026-09-27 20:51:59 [QNAP-PWM] Current MAX_PWM=255
+2026-09-27 20:51:59 [QNAP-PWM] MAX_PWM already set to 255
+2026-09-27 20:51:59 [QNAP-PWM] Triggering HAL fan configuration reload
+2026-09-27 20:52:02 [QNAP-PWM] PWM patch successfully applied
+2026-09-27 21:11:45 [QNAP-PWM] Starting PWM patch
+2026-09-27 21:11:45 [QNAP-PWM] Model config: /etc/model_Q04Z0_Q0500_10_10.conf
+2026-09-27 21:11:45 [QNAP-PWM] Current MAX_PWM=255
+2026-09-27 21:11:45 [QNAP-PWM] MAX_PWM already set to 255
+2026-09-27 21:11:45 [QNAP-PWM] Triggering HAL fan configuration reload
+2026-09-27 21:11:48 [QNAP-PWM] PWM patch successfully applied
+
+===== ACTIVE PROFILE AFTER INSTALL =====
+$ grep -n -A6 '^\[System FAN\]' /etc/model.conf
+43:[System FAN]
+44-FAN_UNIT = MCU
+45-FAN_1 = I1:C0
+46-MIN_PWM = 51
+47-MAX_PWM = 255
+48-HEAT_SOURCE = SYS, DISK
+49-
+
+Cold-start validation after installing the real QPKG was not present in the
+captured session and remains explicitly marked as pending in the documentation.
