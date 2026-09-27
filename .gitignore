@@ -1,0 +1,5 @@
+# Never store credentials, NAS configuration copies, or captures with secrets.
+*.token
+*.credentials
+.env
+*.bak
