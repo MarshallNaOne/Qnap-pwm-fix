@@ -1,0 +1,89 @@
+name: Build QPKG
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  # Required only by the tag-only release step; all other steps are read-only.
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate shell scripts
+        run: |
+          set -eu
+          sh -n scripts/qnap-ts230-fan-cap.sh
+          sh -n scripts/build-qpkg-docker.sh
+          sh -n qpkg/build.sh
+          sh -n qpkg/package_routines
+          sh -n qpkg/shared/QNAP-PWM.sh
+
+      - name: Install QDK build prerequisites
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            build-essential bsdmainutils git rsync
+
+      - name: Install QDK 2.3.11
+        run: |
+          set -eu
+          git clone --depth 1 --branch v2.3.11 \
+            https://github.com/qnap-dev/QDK.git /tmp/QDK
+          make -C /tmp/QDK/src
+          sudo cp -a /tmp/QDK/shared /usr/share/QDK
+          sudo mkdir -p /etc/config
+          sed -e '2d' /usr/share/QDK/qdk.conf > /tmp/qdk.conf
+          sed -i '2iQDK_PATH_P=/usr/share' /tmp/qdk.conf
+          sudo cp /tmp/qdk.conf /etc/config/qdk.conf
+
+      - name: Build QPKG
+        run: |
+          set -eu
+          cd qpkg
+          chmod 755 shared/QNAP-PWM.sh
+          PATH="/usr/share/QDK/bin:$PATH" qbuild --strict --verbose
+
+      - name: Verify and stage release files
+        run: |
+          set -eu
+          package="$(find qpkg/build -maxdepth 1 -type f -name 'QNAP-PWM_*.qpkg' | head -n 1)"
+          test -n "$package"
+          test -s "$package"
+          mkdir -p dist /tmp/qnap-pwm-extract
+          cp "$package" dist/
+          (cd dist && sha256sum QNAP-PWM_*.qpkg > SHA256SUMS)
+          (cd dist && md5sum QNAP-PWM_*.qpkg > MD5SUMS)
+          PATH="/usr/share/QDK/bin:$PATH" qbuild --extract \
+            "$package" /tmp/qnap-pwm-extract
+          cmp qpkg/qpkg.cfg /tmp/qnap-pwm-extract/qpkg.cfg
+          test -s /tmp/qnap-pwm-extract/data.tar.gz
+          grep -q 'QPKG_NAME="QNAP-PWM"' /tmp/qnap-pwm-extract/qpkg.cfg
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: QNAP-PWM-${{ github.sha }}
+          path: dist/
+          if-no-files-found: error
+
+      - name: Publish GitHub Release for version tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            dist/QNAP-PWM_*.qpkg dist/SHA256SUMS dist/MD5SUMS \
+            --verify-tag \
+            --generate-notes \
+            --title "QNAP-PWM ${GITHUB_REF_NAME}"
