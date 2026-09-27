@@ -11,10 +11,20 @@ QNAP TS-230 и воспроизводимое решение в виде QPKG `Q
 
 ## Содержимое
 
+* [`docs/START_HERE.md`](docs/START_HERE.md) — первое чтение: что произошло,
+  что выбрать и как безопасно повторить результат без знаний устройства QTS.
 * [`docs/INVESTIGATION.md`](docs/INVESTIGATION.md) — полная хронология,
   наблюдения, команды, выводы и отвергнутые гипотезы.
+* [`docs/TIMELINE.md`](docs/TIMELINE.md) — последовательность экспериментов,
+  ошибок и решений с объяснением, зачем выполнялся каждый шаг.
+* [`docs/MANUAL_METHOD.md`](docs/MANUAL_METHOD.md) — полностью ручной способ
+  диагностики, применения и отката без установки QPKG.
+* [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — как связаны GUI QTS,
+  QFan, HAL, профиль модели, MCU, PWM и обороты.
 * [`docs/QPKG.md`](docs/QPKG.md) — как устроен пакет, как собрать, установить,
   проверить, удалить и диагностировать его с нуля.
+* [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) — симптомы, причины,
+  команды проверки и восстановление после типичных ошибок.
 * [`logs/session-evidence.txt`](logs/session-evidence.txt) — сохранённые
   технические выводы из исходной SSH-сессии без секретов.
 * [`qpkg/`](qpkg/) — исходники QPKG для QDK 2.3.11.
@@ -74,3 +84,6 @@ QTS fan policy → uLinux HAL → I²C/MCU → FAN_1=I1:C0
 Realtek PWM sysfs и disabled-узел `rtk_fan` в Device Tree не были активным
 путём системного вентилятора. Прямые записи туда не нужны и потенциально
 опасны.
+
+Если вы открыли проект впервые, начинайте не с исходников, а с
+[`docs/START_HERE.md`](docs/START_HERE.md).

@@ -29,6 +29,48 @@ $ grep -n -A5 '^\[System FAN\]' /etc/model.conf
 
 Observed in QTS after applying 50% then 100%: 2970 RPM.
 
+===== HAL FORCE/CLEAR EXPERIMENT =====
+$ sudo /sbin/hal_event --se_set_fan_force_speed fan_level=7
+$ sudo /sbin/hal_event --se_set_fan_force_speed fan_level=8
+$ sudo /sbin/hal_event --se_set_fan_force_speed fan_level=10
+$ sudo /sbin/hal_event --se_clear_fan_force_speed
+
+Observed: forced levels 7-10 produced about 2800 RPM. After clear, QTS Fixed
+100% with MAX_PWM=255 produced 2970 RPM. RPM fluctuated while level 7 was
+active. This proved that fan_level is an internal HAL level, not a percentage,
+and that clear restores the native QTS policy.
+
+The strings that motivated the controlled test were present in hal_event:
+
+/sbin/hal_event --se_set_fan_force_speed fan_level=7
+/sbin/hal_event --se_clear_fan_force_speed
+ENC SET_FAN_FORCE_SPEED level = %d
+ENC CLEAR_FAN_FORCE_SPEED
+Fan Fixed mode ,level = %d
+
+===== QPKG SUBSYSTEM MANUAL START TEST =====
+$ sudo /sbin/qpkg_cli --status QNAP-PWM --output 2
+{ "name": "QNAP-PWM", "status_code": 600, "status_value": "enabled", "op_code": 1, "st_code": 0, "enabled": "true" }
+
+$ sudo sed -i 's/^MAX_PWM = 255$/MAX_PWM = 178/' /etc/model.conf
+$ sudo /sbin/qpkg_service start QNAP-PWM
+
+$ grep -n -A5 '^\[System FAN\]' /etc/model.conf
+43:[System FAN]
+44-FAN_UNIT = MCU
+45-FAN_1 = I1:C0
+46-MIN_PWM = 51
+47-MAX_PWM = 255
+48-HEAT_SOURCE = SYS, DISK
+
+Log excerpt:
+2026-09-27 20:35:20 [QNAP-PWM] Starting PWM patch
+2026-09-27 20:35:20 [QNAP-PWM] Model config: /etc/model.conf
+2026-09-27 20:35:20 [QNAP-PWM] Current MAX_PWM=178
+2026-09-27 20:35:20 [QNAP-PWM] MAX_PWM changed: 178 -> 255
+2026-09-27 20:35:20 [QNAP-PWM] Triggering HAL fan configuration reload
+2026-09-27 20:35:23 [QNAP-PWM] PWM patch successfully applied
+
 ===== FIRST MANUAL QPKG REGISTRATION AFTER REBOOT =====
 $ sudo /sbin/qpkg_cli --status QNAP-PWM --output 2
 { "name": "QNAP-PWM", "status_code": 700, "status_value": "disabled", "op_code": 1, "st_code": 0, "enabled": "false" }
